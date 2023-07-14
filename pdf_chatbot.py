@@ -18,7 +18,7 @@ from langchain.memory import ConversationBufferMemory
 import streamlit as st
 
 #load our open ai information
-with open('keys/hf.json', 'r') as rd_f:
+with open('{PATH_TO_HUGGINGFACEHUB_API_TOKEN}.json', 'r') as rd_f:
     data = json.load(rd_f)
     
 os.environ['HUGGINGFACEHUB_API_TOKEN'] = data['HUGGINGFACEHUB_API_TOKEN']
