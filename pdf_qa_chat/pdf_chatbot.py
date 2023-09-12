@@ -2,40 +2,33 @@ import json
 import os
 import shutil
 import tempfile
-
 #import packages needed for openai llm
-# import openai
 from langchain.llms import OpenAI
 from langchain import HuggingFaceHub
 from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.document_loaders import PyPDFLoader
+from langchain.document_loaders import PyPDFLoader, PyPDFDirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
-
 #import streamlit
 import streamlit as st
 
-#load our open ai information
-with open('keys/hf.json', 'r') as rd_f:
-    data = json.load(rd_f)
-    
-os.environ['HUGGINGFACEHUB_API_TOKEN'] = data['HUGGINGFACEHUB_API_TOKEN']
-
-def create_document_store(upload_file):
+def create_document_store(upload_files):
     #reset file path if multiple pdfs added
     temp_file_path = os.getcwd()
     
+    
     #create temporary file path for pdf
     temp_dir = tempfile.TemporaryDirectory()
-    temp_file_path = os.path.join(temp_dir.name, upload_file.name)
-    #write and save pdf file
-    with open(temp_file_path, 'wb') as tmp:
-        tmp.write(upload_file.read())
+    for fil in upload_files:
+        temp_file_path = os.path.join(temp_dir.name, fil.name)
+        #write and save pdf file
+        with open(temp_file_path, 'wb') as tmp:
+            tmp.write(fil.read())
         
     #add pdf to loader object
-    loader = PyPDFLoader(temp_file_path)
+    loader = PyPDFDirectoryLoader(temp_dir.name)
     #read pages of loader
     pages = loader.load() #use page[i].page_content to access page text if needed
 
@@ -62,7 +55,7 @@ def create_document_store(upload_file):
 def create_chain(document_store):
     #load llm model and embeddings
     llm = HuggingFaceHub(repo_id='google/flan-t5-large',
-                     model_kwargs={"temperature":0.5, "max_length":512})
+                     model_kwargs={"temperature":0.1, "max_length":512})
     
     #create memory object
     memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)
@@ -81,7 +74,10 @@ bot_template = "<img src='https://upload.wikimedia.org/wikipedia/en/5/5b/WALL%C2
 user_template = "<img src='https://static.tvtropes.org/pmwiki/pub/images/linguinei_feom_ratatsaoiulle_9937.png' width=35 height=35 style='border:1px solid black; border-radius: 50%; object-fit: cover;'>"
 
 def process_question(input_query):
+    #send user query to qa chain saved in session state memory
     response = st.session_state.conversation({'question': input_query, 'chat_history': st.session_state.chat_history})
+
+    #save chat history to session state memory
     st.session_state.chat_history = response['chat_history']
     
     #iterate through chat history in reverse order
@@ -95,9 +91,9 @@ def process_question(input_query):
                      unsafe_allow_html=True)
 
 #start streamlit instance
-st.title('PDF Helper')
+st.title('PDF ChatBot')
 
-#initialize chat history
+#initialize chat history and conversation in session memory
 if "conversation" not in st.session_state:
     st.session_state.conversation = None
 if "chat_history" not in st.session_state:
@@ -112,10 +108,16 @@ if user_question:
     
 #move document upload to a sidebar
 with st.sidebar:
-    uploaded_file = st.file_uploader('Upload pdf here.')
+    #hugginface api token input
+    HUGGINGFACEHUB_API_TOKEN = st.text_input("Please input HuggingFace API Token.", type="password")
+    
+    #file input to upload files
+    uploaded_file = st.file_uploader('Upload pdf here.', accept_multiple_files=True)
+    
     #when button pressed
     if st.button('Read.'):
         with st.spinner('Reading'):
+            os.environ['HUGGINGFACEHUB_API_TOKEN'] = HUGGINGFACEHUB_API_TOKEN
             #create document store for pdf
             document_store = create_document_store(uploaded_file)
 
