@@ -68,7 +68,7 @@ def create_chain(document_store):
     return qa_chain
 
 #image for bot
-bot_template = "<img src='https://upload.wikimedia.org/wikipedia/en/5/5b/WALL%C2%B7E_%28character%29.jpg' width=35 height=35 style='border:1px solid black; border-radius: 50%; object-fit: cover;'>"
+bot_template = "<img src='https://upload.wikimedia.org/wikipedia/en/e/e6/WALL-E_%28character%29.jpg' width=35 height=35 style='border:1px solid black; border-radius: 50%; object-fit: cover;'>"
 
 #image for user
 user_template = "<img src='https://static.tvtropes.org/pmwiki/pub/images/linguinei_feom_ratatsaoiulle_9937.png' width=35 height=35 style='border:1px solid black; border-radius: 50%; object-fit: cover;'>"
